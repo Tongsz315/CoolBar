@@ -62,12 +62,11 @@ final class OverflowController {
     }
 
     @objc private func openDetail() {
-        // 转发给 AppDelegate
-        NSApp.sendAction(#selector(AppDelegate.openPreferences), to: NSApp.delegate, from: nil)
+        // TODO: 打开系统状态总览 Popover
     }
 
     @objc private func openPreferences() {
-        NSApp.sendAction(#selector(AppDelegate.openPreferences), to: NSApp.delegate, from: nil)
+        // TODO: 打开偏好设置窗口
     }
 
     @objc private func quitApp() {

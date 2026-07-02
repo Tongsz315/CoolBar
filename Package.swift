@@ -15,13 +15,34 @@ let package = Package(
             path: "Sources",
             sources: [
                 "main.swift",
+                // App
                 "App/AppDelegate.swift",
-                "Core/AppIcon.swift",
+                // Core
                 "Core/StatusBarController.swift",
+                "Core/AppIcon.swift",
+                "Core/DataProvider.swift",
+                "Core/MonitorProtocol.swift",
+                // Monitors
+                "Monitors/CPUMonitor.swift",
+                "Monitors/MemoryMonitor.swift",
+                "Monitors/NetworkMonitor.swift",
+                "Monitors/BatteryMonitor.swift",
+                // BarManager
+                "BarManager/OverflowController.swift",
+                // UI
+                "UI/PopoverView.swift",
+                "UI/DetailChart.swift",
+                "UI/Preferences/PreferencesView.swift",
+                "UI/Preferences/GeneralTab.swift",
+                "UI/Preferences/MonitorsTab.swift",
+                // Utils
+                "Utils/Extensions.swift",
+                "Utils/LaunchAtLogin.swift",
             ],
             linkerSettings: [
                 .linkedFramework("IOKit"),
-                .linkedFramework("ServiceManagement")
+                .linkedFramework("ServiceManagement"),
+                .linkedFramework("SwiftUI"),
             ]
         )
     ]

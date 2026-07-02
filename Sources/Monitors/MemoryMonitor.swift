@@ -37,9 +37,9 @@ final class MemoryMonitor: MonitorProtocol {
         }
 
         let pageSize = UInt64(vm_kernel_page_size)
-        let freePages = UInt64(vmStats.free_count)
+        let _ = UInt64(vmStats.free_count)
         let activePages = UInt64(vmStats.active_count)
-        let inactivePages = UInt64(vmStats.inactive_count)
+        let _ = UInt64(vmStats.inactive_count)
         let wirePages = UInt64(vmStats.wire_count)
         let compressedPages = UInt64(vmStats.compressor_page_count)
 

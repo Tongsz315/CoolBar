@@ -5,12 +5,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let log = "/tmp/coolbar-debug.log"
-        "didFinishLaunching\n".data(using: .utf8)?.appendToFile(log)
+        "CoolBar launched (floating window mode)\n".data(using: .utf8)?.appendToFile(log)
+
+        // 创建监控模块
+        let monitors: [MonitorProtocol] = [
+            CPUMonitor(),
+            MemoryMonitor(),
+            NetworkMonitor(),
+            BatteryMonitor()
+        ]
 
         statusBarController = StatusBarController()
-        statusBarController?.start()
+        statusBarController?.start(with: monitors)
 
-        "start completed\n".data(using: .utf8)?.appendToFile(log)
+        "Monitors started: \(monitors.map { $0.id })\n".data(using: .utf8)?.appendToFile(log)
+
+        // 监听系统外观变化
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.statusBarController?.updateForAppearanceChange()
+        }
     }
 }
 
