@@ -63,7 +63,8 @@ struct StatsWindowView: View {
                 }
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .padding(.top, 32)        // 标题栏空间
+            .padding(.bottom, 8)
 
             Spacer()
 
@@ -121,17 +122,11 @@ struct StatsWindowView: View {
     @ViewBuilder
     private var contentArea: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header
+            // Header (留出透明标题栏高度)
             HStack {
                 Text(selectedTab.rawValue)
                     .font(.system(size: 18, weight: .bold))
                 Spacer()
-                Button(action: {}) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 16))
-                        .foregroundColor(.secondary)
-                }
-                .buttonStyle(.plain)
                 Toggle("", isOn: .constant(true))
                     .labelsHidden()
                     .tint(.blue)
@@ -139,7 +134,7 @@ struct StatsWindowView: View {
                     .scaleEffect(0.85)
             }
             .padding(.horizontal, 20)
-            .padding(.top, 14)
+            .padding(.top, 36)   // 给透明标题栏 + 交通灯按钮留空间
             .padding(.bottom, 12)
 
             ScrollView {
