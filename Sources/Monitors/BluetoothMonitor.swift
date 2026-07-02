@@ -7,7 +7,7 @@ final class BluetoothMonitor: MonitorProtocol {
     let id = "bluetooth"
     let title = "BT"
     let refreshInterval: TimeInterval = 5.0
-    var isEnabled = true
+    var isEnabled = false   // 默认禁用，需用户授权蓝牙后启用
 
     private(set) var displayText = "BT --"
     private var devices: [(name: String, battery: Int)] = []
@@ -23,8 +23,6 @@ final class BluetoothMonitor: MonitorProtocol {
 
     func update() -> [(name: String, battery: Int)] {
         var result: [(String, Int)] = []
-
-        // 遍历已知的蓝牙设备
         if let pairedDevices = IOBluetoothDevice.pairedDevices() {
             for case let device as IOBluetoothDevice in pairedDevices {
                 if device.isConnected() {

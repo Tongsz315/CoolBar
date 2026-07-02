@@ -52,6 +52,8 @@ cat > "$APP_DIR/Contents/Info.plist" << 'PLISTEOF'
 	<true/>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>CoolBar 需要蓝牙权限来显示已连接设备的电池电量</string>
 </dict>
 </plist>
 PLISTEOF
