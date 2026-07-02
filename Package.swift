@@ -32,7 +32,8 @@ let package = Package(
                 // BarManager
                 "BarManager/OverflowController.swift",
                 // UI
-                "UI/DashboardView.swift",
+                "UI/StatsWindowView.swift",
+                "UI/StatsPages.swift",
                 "UI/PopoverView.swift",
                 "UI/DetailChart.swift",
                 "UI/Preferences/PreferencesView.swift",

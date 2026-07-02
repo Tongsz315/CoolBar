@@ -1,72 +1,54 @@
 import AppKit
 import SwiftUI
 
-/// 详情面板控制器 — 管理 Stats 风格弹出面板的显示/隐藏
 final class DetailPanelController {
     private var panel: NSPanel?
     private var viewModel: DashboardViewModel?
     var isVisible: Bool { panel?.isVisible ?? false }
 
     func toggle(relativeTo window: NSWindow?, monitors: [any MonitorProtocol]) {
-        if let panel = panel, panel.isVisible {
-            panel.close()
-        } else {
-            show(relativeTo: window, monitors: monitors)
-        }
+        if let p = panel, p.isVisible { p.close() }
+        else { show(relativeTo: window, monitors: monitors) }
     }
 
     private func show(relativeTo barWindow: NSWindow?, monitors: [any MonitorProtocol]) {
-        // 找到对应的 monitor 实例
-        var cpu: CPUMonitor?
-        var mem: MemoryMonitor?
-        var net: NetworkMonitor?
-        var bat: BatteryMonitor?
+        var cpu: CPUMonitor?; var mem: MemoryMonitor?; var net: NetworkMonitor?; var bat: BatteryMonitor?
         for m in monitors {
             if let c = m as? CPUMonitor { cpu = c }
             else if let mm = m as? MemoryMonitor { mem = mm }
             else if let n = m as? NetworkMonitor { net = n }
             else if let b = m as? BatteryMonitor { bat = b }
         }
+        guard let c = cpu, let m = mem, let n = net, let b = bat else { return }
 
-        guard let cpu = cpu, let mem = mem, let net = net, let bat = bat else { return }
+        viewModel = DashboardViewModel(cpu: c, mem: m, net: n, bat: b)
+        let statsView = StatsWindowView(vm: viewModel!)
+        let hosting = NSHostingView(rootView: statsView)
+        hosting.frame = NSRect(x: 0, y: 0, width: 540, height: 440)
 
-        viewModel = DashboardViewModel(cpu: cpu, mem: mem, net: net, bat: bat)
-
-        let dashboard = DashboardView(viewModel: viewModel!)
-        let hosting = NSHostingView(rootView: dashboard)
-        hosting.frame = NSRect(x: 0, y: 0, width: 300, height: 420)
-
-        let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 300, height: 420),
-            styleMask: [.borderless, .nonactivatingPanel],
+        let p = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 540, height: 440),
+            styleMask: [.borderless],
             backing: .buffered,
             defer: false
         )
-        panel.contentView = hosting
-        panel.isOpaque = false
-        panel.backgroundColor = .clear
-        panel.hasShadow = true
-        panel.level = .floating
-        panel.collectionBehavior = [.canJoinAllSpaces, .transient]
-        panel.isReleasedWhenClosed = false
-        panel.animationBehavior = .utilityWindow
+        p.contentView = hosting
+        p.isOpaque = false
+        p.backgroundColor = .clear
+        p.hasShadow = true
+        p.level = .floating
+        p.collectionBehavior = [.canJoinAllSpaces]
+        p.isReleasedWhenClosed = false
 
-        // 定位：在 CoolBar 浮窗正下方
+        // Position below CoolBar capsule
         if let barWin = barWindow {
-            let barFrame = barWin.frame
-            let origin = NSPoint(
-                x: barFrame.maxX - 300,
-                y: barFrame.minY - 420 - 4
-            )
-            panel.setFrameOrigin(origin)
+            let bf = barWin.frame
+            p.setFrameOrigin(NSPoint(x: bf.maxX - 552, y: bf.minY - 448))
         }
 
-        panel.orderFront(nil)
-        self.panel = panel
+        p.orderFront(nil)
+        self.panel = p
     }
 
-    func close() {
-        panel?.close()
-        panel = nil
-    }
+    func close() { panel?.close(); panel = nil }
 }
