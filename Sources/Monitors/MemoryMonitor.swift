@@ -8,9 +8,11 @@ final class MemoryMonitor: MonitorProtocol {
     var isEnabled = true
 
     private(set) var displayText = "MEM --"
+    private(set) var history: [Double] = []
 
     func start() {
         displayText = "MEM --"
+        history = []
     }
 
     func stop() {}
@@ -56,6 +58,8 @@ final class MemoryMonitor: MonitorProtocol {
         }
 
         let percent = Int(round(ratio * 100))
+        history.append(Double(percent))
+        if history.count > 30 { history.removeFirst() }
 
         displayText = String(format: "MEM %2d%%", percent)
 

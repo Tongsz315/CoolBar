@@ -19,6 +19,8 @@ let package = Package(
                 "App/AppDelegate.swift",
                 // Core
                 "Core/StatusBarController.swift",
+                "Core/DetailPanelController.swift",
+                "Core/DashboardViewModel.swift",
                 "Core/AppIcon.swift",
                 "Core/DataProvider.swift",
                 "Core/MonitorProtocol.swift",
@@ -30,6 +32,7 @@ let package = Package(
                 // BarManager
                 "BarManager/OverflowController.swift",
                 // UI
+                "UI/DashboardView.swift",
                 "UI/PopoverView.swift",
                 "UI/DetailChart.swift",
                 "UI/Preferences/PreferencesView.swift",

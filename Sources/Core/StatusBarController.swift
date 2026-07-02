@@ -1,13 +1,13 @@
 import AppKit
 
 /// 浮窗式菜单栏控制器
-/// 用 NSWindow 替代 NSStatusItem（因 NSStatusItem 在当前系统上不可见）
 final class StatusBarController {
     private var barWindow: NSWindow?
     private var menu: NSMenu?
     private var monitors: [any MonitorProtocol] = []
     private var refreshTimer: Timer?
     private var barLabel: NSTextField?
+    private var detailPanel: DetailPanelController?
 
     // MARK: - Start
 
@@ -17,6 +17,7 @@ final class StatusBarController {
         setupMenu()
         startMonitors()
         startRefreshing()
+        detailPanel = DetailPanelController()
     }
 
     // MARK: - Window Setup
@@ -27,13 +28,10 @@ final class StatusBarController {
         let visible = screen.visibleFrame
         let menuBarHeight = frame.maxY - visible.maxY
 
-        // 胶囊按钮尺寸
-        let winWidth: CGFloat = 230
-        let winHeight = menuBarHeight - 5          // 上下各留 2.5pt
-        let winX = frame.maxX - winWidth - 12      // 右侧留边距
-        let winY = frame.maxY - menuBarHeight + 2.5 // 在菜单栏内居中
-
-        let rect = NSRect(x: winX, y: winY, width: winWidth, height: winHeight)
+        let w: CGFloat = 230, h = menuBarHeight - 5
+        let x = frame.maxX - w - 12
+        let y = frame.maxY - menuBarHeight + 2.5
+        let rect = NSRect(x: x, y: y, width: w, height: h)
 
         let window = NSWindow(
             contentRect: rect,
@@ -46,17 +44,17 @@ final class StatusBarController {
         window.backgroundColor = .clear
         window.hasShadow = false
         window.collectionBehavior = [.canJoinAllSpaces]
-        window.ignoresMouseEvents = false
 
-        let content = NSView(frame: NSRect(x: 0, y: 0, width: winWidth, height: winHeight))
+        let content = BarContentView(frame: NSRect(x: 0, y: 0, width: w, height: h))
         content.wantsLayer = true
-        content.layer?.cornerRadius = winHeight / 2        // 胶囊形
+        content.layer?.cornerRadius = h / 2
         content.layer?.masksToBounds = true
-        // 深色半透明胶囊背景
         content.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.55).cgColor
 
-        // 白色文字标签
-        let label = NSTextField(frame: NSRect(x: 10, y: 0, width: winWidth - 20, height: winHeight))
+        content.onLeftClick = { [weak self] in self?.toggleDetailPanel() }
+        content.onRightClick = { [weak self] in self?.showMenu() }
+
+        let label = NSTextField(frame: NSRect(x: 10, y: 0, width: w - 20, height: h))
         label.stringValue = "CoolBar"
         label.alignment = .center
         label.isEditable = false
@@ -64,22 +62,15 @@ final class StatusBarController {
         label.backgroundColor = .clear
         label.font = NSFont.monospacedDigitSystemFont(ofSize: 10.5, weight: .medium)
         label.textColor = .white
-        label.cell?.usesSingleLineMode = true
-        label.cell?.lineBreakMode = .byClipping
         content.addSubview(label)
         barLabel = label
 
-        // 点击
-        let click = NSClickGestureRecognizer(target: self, action: #selector(handleClick(_:)))
-        content.addGestureRecognizer(click)
-
-        content.toolTip = "CoolBar · 右键菜单"
         window.contentView = content
         window.orderFront(nil)
         barWindow = window
     }
 
-    // MARK: - Menu
+    // MARK: - Interactions
 
     private func setupMenu() {
         menu = NSMenu()
@@ -90,20 +81,18 @@ final class StatusBarController {
         menu?.addItem(quit)
     }
 
-    @objc private func handleClick(_ gesture: NSClickGestureRecognizer) {
+    private func toggleDetailPanel() {
+        detailPanel?.toggle(relativeTo: barWindow, monitors: monitors)
+    }
+
+    private func showMenu() {
         guard let menu = menu, let win = barWindow else { return }
-        let event = NSEvent.mouseEvent(
-            with: .rightMouseDown,
-            location: .zero,
-            modifierFlags: [],
-            timestamp: 0,
-            windowNumber: win.windowNumber,
-            context: nil,
-            eventNumber: 0,
-            clickCount: 1,
-            pressure: 1
+        _ = win.frame.origin
+        menu.popUp(
+            positioning: nil,
+            at: NSPoint(x: 0, y: 0),
+            in: win.contentView
         )
-        NSMenu.popUpContextMenu(menu, with: event!, for: win.contentView!)
     }
 
     // MARK: - Monitors
@@ -123,39 +112,33 @@ final class StatusBarController {
     }
 
     private func updateDisplay() {
-        let text = formatDisplay()
-        barLabel?.stringValue = text
-        barLabel?.toolTip = formatTooltip()
-    }
-
-    private func formatDisplay() -> String {
         let parts = monitors
             .filter { $0.isEnabled }
             .map { $0.displayText }
             .filter { !$0.isEmpty && $0 != "-" }
-        return parts.isEmpty ? "CoolBar" : parts.joined(separator: "  ")
-    }
-
-    private func formatTooltip() -> String {
-        var lines = ["CoolBar — 系统监控"]
-        for m in monitors {
-            let d = m.detailedInfo().map { "\($0.0): \($0.1)" }.joined(separator: "  ")
-            lines.append("▸ \(m.title)  \(d)")
-        }
-        return lines.joined(separator: "\n")
-    }
-
-    // MARK: - Appearance
-
-    func updateForAppearanceChange() {
-        // 深色胶囊 + 白字，深浅模式下都保持一致
+        barLabel?.stringValue = parts.isEmpty ? "CoolBar" : parts.joined(separator: "  ")
     }
 
     // MARK: - Quit
 
     @objc private func quitApp() {
+        detailPanel?.close()
         for m in monitors { m.stop() }
         refreshTimer?.invalidate()
         NSApplication.shared.terminate(nil)
+    }
+}
+
+/// 自定义视图 — 区分左右键点击
+private final class BarContentView: NSView {
+    var onLeftClick: (() -> Void)?
+    var onRightClick: (() -> Void)?
+
+    override func mouseDown(with event: NSEvent) {
+        onLeftClick?()
+    }
+
+    override func rightMouseDown(with event: NSEvent) {
+        onRightClick?()
     }
 }

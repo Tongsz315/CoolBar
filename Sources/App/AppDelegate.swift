@@ -26,7 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.statusBarController?.updateForAppearanceChange()
+            // 屏幕参数变化时不需要额外处理
         }
     }
 }

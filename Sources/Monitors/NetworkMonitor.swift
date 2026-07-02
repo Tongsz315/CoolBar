@@ -8,11 +8,13 @@ final class NetworkMonitor: MonitorProtocol {
     var isEnabled = true
 
     private(set) var displayText = "NET --"
+    private(set) var history: [(down: Double, up: Double)] = []
     private var previousBytes: (in: UInt64, out: UInt64)?
     private var previousTime: Date?
 
     func start() {
         displayText = "NET --"
+        history = []
         previousBytes = nil
         previousTime = nil
     }
@@ -103,6 +105,10 @@ final class NetworkMonitor: MonitorProtocol {
             let upStr = formatSpeed(upload)
             displayText = "↑\(upStr)"
         }
+
+        // 记录历史
+        history.append((down: download, up: upload))
+        if history.count > 30 { history.removeFirst() }
 
         return (download, upload)
     }
