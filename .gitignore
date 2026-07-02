@@ -1,0 +1,23 @@
+# Swift / SPM
+.build/
+*.xcodeproj/
+*.xcworkspace/
+Packages/
+Package.resolved
+
+# Build artifacts
+build/
+
+# IDE
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+*.DS_Store
+
+# Debug logs
+*.log
+
+# Archives
+*.dmg
