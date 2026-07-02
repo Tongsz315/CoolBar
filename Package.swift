@@ -3,35 +3,30 @@ import PackageDescription
 
 let package = Package(
     name: "CoolBar",
-    platforms: [
-        .macOS(.v14)
-    ],
-    products: [
-        .executable(name: "CoolBar", targets: ["CoolBar"])
-    ],
+    platforms: [.macOS(.v14)],
+    products: [.executable(name: "CoolBar", targets: ["CoolBar"])],
     targets: [
         .executableTarget(
             name: "CoolBar",
             path: "Sources",
             sources: [
                 "main.swift",
-                // App
                 "App/AppDelegate.swift",
-                // Core
                 "Core/StatusBarController.swift",
                 "Core/DetailPanelController.swift",
                 "Core/DashboardViewModel.swift",
                 "Core/AppIcon.swift",
                 "Core/DataProvider.swift",
                 "Core/MonitorProtocol.swift",
-                // Monitors
                 "Monitors/CPUMonitor.swift",
+                "Monitors/GPUMonitor.swift",
                 "Monitors/MemoryMonitor.swift",
+                "Monitors/DiskMonitor.swift",
                 "Monitors/NetworkMonitor.swift",
                 "Monitors/BatteryMonitor.swift",
-                // BarManager
+                "Monitors/BluetoothMonitor.swift",
+                "Monitors/ClockMonitor.swift",
                 "BarManager/OverflowController.swift",
-                // UI
                 "UI/StatsWindowView.swift",
                 "UI/StatsPages.swift",
                 "UI/PopoverView.swift",
@@ -39,7 +34,6 @@ let package = Package(
                 "UI/Preferences/PreferencesView.swift",
                 "UI/Preferences/GeneralTab.swift",
                 "UI/Preferences/MonitorsTab.swift",
-                // Utils
                 "Utils/Extensions.swift",
                 "Utils/LaunchAtLogin.swift",
             ],
@@ -47,6 +41,8 @@ let package = Package(
                 .linkedFramework("IOKit"),
                 .linkedFramework("ServiceManagement"),
                 .linkedFramework("SwiftUI"),
+                .linkedFramework("Metal"),
+                .linkedFramework("IOBluetooth"),
             ]
         )
     ]

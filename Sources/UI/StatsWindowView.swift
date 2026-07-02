@@ -5,17 +5,25 @@ import SwiftUI
 enum DashboardTab: String, CaseIterable {
     case overview = "仪表盘"
     case cpu = "CPU"
+    case gpu = "GPU"
     case memory = "内存"
+    case disk = "磁盘"
     case network = "网络"
     case battery = "电池"
+    case bluetooth = "蓝牙"
+    case clock = "时钟"
 
     var icon: String {
         switch self {
         case .overview: return "square.grid.2x2.fill"
         case .cpu: return "cpu.fill"
+        case .gpu: return "display"
         case .memory: return "memorychip.fill"
+        case .disk: return "externaldrive.fill"
         case .network: return "network"
         case .battery: return "battery.100"
+        case .bluetooth: return "antenna.radiowaves.left.and.right"
+        case .clock: return "clock.fill"
         }
     }
 }
@@ -24,8 +32,8 @@ enum DashboardTab: String, CaseIterable {
 
 struct StatsWindowView: View {
     @ObservedObject var vm: DashboardViewModel
+    let allMonitors: [any MonitorProtocol]
     @State private var selectedTab: DashboardTab = .overview
-    @State private var showHistory = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -118,7 +126,7 @@ struct StatsWindowView: View {
                 Text(selectedTab.rawValue)
                     .font(.system(size: 18, weight: .bold))
                 Spacer()
-                Button(action: { showHistory.toggle() }) {
+                Button(action: {}) {
                     Image(systemName: "clock.arrow.circlepath")
                         .font(.system(size: 16))
                         .foregroundColor(.secondary)
@@ -136,13 +144,17 @@ struct StatsWindowView: View {
 
             ScrollView {
                 VStack(spacing: 10) {
-                    switch selectedTab {
-                    case .overview: OverviewPage(vm: vm)
-                    case .cpu: CPUPage(vm: vm)
-                    case .memory: MemoryPage(vm: vm)
-                    case .network: NetworkPage(vm: vm)
-                    case .battery: BatteryPage(vm: vm)
-                    }
+                switch selectedTab {
+                case .overview: OverviewPage(vm: vm)
+                case .cpu: CPUPage(vm: vm)
+                case .gpu: GPUPage(vm: vm)
+                case .memory: MemoryPage(vm: vm)
+                case .disk: DiskPage(vm: vm)
+                case .network: NetworkPage(vm: vm)
+                case .battery: BatteryPage(vm: vm)
+                case .bluetooth: BluetoothPage(vm: vm)
+                case .clock: ClockPage(vm: vm)
+                }
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 12)

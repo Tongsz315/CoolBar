@@ -206,8 +206,8 @@ struct NetworkPage: View {
                     }
                     Spacer()
 
-                    // Total ring
-                    RingChart(fraction: min(CGFloat(Double(vm.netSpeedValue()) / 1_000_000), 1),
+                    // Ring
+                    RingChart(fraction: 0.5,
                               text: vm.netDownload,
                               colors: [.orange])
                 }
@@ -300,5 +300,155 @@ struct BatteryPage: View {
 
     private func vmTime() -> String {
         let f = DateFormatter(); f.dateFormat = "HH:mm"; return f.string(from: Date())
+    }
+}
+
+// MARK: - GPU Page
+
+struct GPUPage: View {
+    let vm: DashboardViewModel
+
+    var body: some View {
+        VStack(spacing: 10) {
+            StatCard {
+                HStack(alignment: .center, spacing: 20) {
+                    RingChart(fraction: vm.gpuFraction, text: vm.gpuPercent, colors: [.purple])
+                    VStack(alignment: .leading, spacing: 6) {
+                        statRow("使用率", value: vm.gpuPercent)
+                        statRow("架构", value: vm.gpuName)
+                    }
+                    Spacer()
+                }
+            }
+            StatCard {
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text("GPU 历史").font(.system(size: 13, weight: .semibold))
+                        Spacer()
+                        Text(vm.gpuPercent).font(.system(size: 13, weight: .bold, design: .monospaced))
+                    }
+                    AreaChart(data: vm.gpuHistory, color: .purple).frame(height: 120)
+                }
+            }
+        }
+    }
+
+    private func statRow(_ label: String, value: String) -> some View {
+        HStack(spacing: 6) {
+            Text(label).font(.system(size: 12)).foregroundColor(.secondary)
+            Spacer()
+            Text(value).font(.system(size: 12, weight: .medium, design: .monospaced))
+        }
+    }
+}
+
+// MARK: - Disk Page
+
+struct DiskPage: View {
+    let vm: DashboardViewModel
+
+    var body: some View {
+        VStack(spacing: 10) {
+            StatCard {
+                HStack(spacing: 30) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "arrow.down.doc.fill").font(.system(size: 24)).foregroundColor(.blue)
+                        Text(vm.diskRead).font(.system(size: 22, weight: .bold, design: .monospaced))
+                        Text("读取").font(.system(size: 11)).foregroundColor(.secondary)
+                    }
+                    VStack(spacing: 4) {
+                        Image(systemName: "arrow.up.doc.fill").font(.system(size: 24)).foregroundColor(.orange)
+                        Text(vm.diskWrite).font(.system(size: 22, weight: .bold, design: .monospaced))
+                        Text("写入").font(.system(size: 11)).foregroundColor(.secondary)
+                    }
+                    Spacer()
+                }
+            }
+            StatCard {
+                VStack(alignment: .leading) {
+                    Text("读取历史").font(.system(size: 13, weight: .semibold))
+                    AreaChart(data: vm.diskHistory, color: .blue).frame(height: 70)
+                }
+            }
+            StatCard {
+                VStack(alignment: .leading) {
+                    Text("写入历史").font(.system(size: 13, weight: .semibold))
+                    AreaChart(data: vm.diskWriteHistory, color: .orange).frame(height: 70)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Bluetooth Page
+
+struct BluetoothPage: View {
+    let vm: DashboardViewModel
+
+    var body: some View {
+        VStack(spacing: 10) {
+            StatCard {
+                if vm.btDevices.isEmpty {
+                    HStack {
+                        Image(systemName: "antenna.radiowaves.left.and.right").font(.system(size: 20)).foregroundColor(.secondary)
+                        Text("无已连接的蓝牙设备").font(.system(size: 13)).foregroundColor(.secondary)
+                        Spacer()
+                    }
+                } else {
+                    VStack(spacing: 6) {
+                        ForEach(vm.btDevices.indices, id: \.self) { i in
+                            let d = vm.btDevices[i]
+                            HStack {
+                                Image(systemName: "headphones").foregroundColor(.blue)
+                                Text(d.name).font(.system(size: 13))
+                                Spacer()
+                                Text("\(d.battery)%")
+                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                    .foregroundColor(d.battery > 20 ? .green : .red)
+                                // Battery bar
+                                GeometryReader { geo in
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(Color.secondary.opacity(0.2)).frame(height: 6)
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(d.battery > 20 ? Color.green : Color.red)
+                                        .frame(width: geo.size.width * CGFloat(d.battery) / 100, height: 6)
+                                }
+                                .frame(width: 60, height: 6)
+                            }
+                        }
+                    }
+                }
+            }
+            Text("需要设备主动上报电池信息\n（AirPods、Magic Mouse 等）")
+                .font(.system(size: 10)).foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.top, 4)
+        }
+    }
+}
+
+// MARK: - Clock Page
+
+struct ClockPage: View {
+    let vm: DashboardViewModel
+
+    var body: some View {
+        VStack(spacing: 10) {
+            StatCard {
+                VStack(spacing: 8) {
+                    Text(vm.clockTime)
+                        .font(.system(size: 48, weight: .thin, design: .default))
+                    Text(vm.clockFull)
+                        .font(.system(size: 13)).foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+            }
+            StatCard {
+                VStack(spacing: 6) {
+                    HStack { Text("时区"); Spacer(); Text(vm.clockTz) }.font(.system(size: 12))
+                }
+            }
+        }
     }
 }
