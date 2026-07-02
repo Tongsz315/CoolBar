@@ -3,36 +3,39 @@ import Foundation
 /// 时钟显示模块
 final class ClockMonitor: MonitorProtocol {
     let id = "clock"
-    let title = "CLK"
     let refreshInterval: TimeInterval = 1.0
     var isEnabled = true
 
     private(set) var displayText = "--:--"
-    private let formatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "HH:mm"
-        return f
-    }()
+    private(set) var currentTime = "--:--"
 
-    func start() { displayText = formatter.string(from: Date()) }
+    private let lock = NSLock()
+
+    func start() {
+        lock.withLock {
+            currentTime = Formatters.timeFormatter.string(from: Date())
+            displayText = currentTime
+        }
+    }
+
     func stop() {}
-    func refresh() { _ = update() }
 
-    func update() -> String {
+    func update() {
         let now = Date()
-        let time = formatter.string(from: now)
-        displayText = time
-        return time
+        let time = Formatters.timeFormatter.string(from: now)
+        lock.withLock {
+            currentTime = time
+            displayText = time
+        }
     }
 
     func detailedInfo() -> [(String, String)] {
         let now = Date()
-        let full = DateFormatter(); full.dateFormat = "yyyy-MM-dd HH:mm:ss"
         let tz = TimeZone.current
         return [
-            ("当前时间", full.string(from: now)),
+            ("当前时间", Formatters.fullDateFormatter.string(from: now)),
             ("时区", tz.identifier),
-            ("偏移", "\(tz.abbreviation() ?? "-")"),
+            ("偏移", tz.abbreviation() ?? "-")
         ]
     }
 }

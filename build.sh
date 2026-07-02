@@ -8,6 +8,14 @@ cd "$(dirname "$0")"
 # Kill existing instance
 pkill -f "CoolBar.app" 2>/dev/null || true
 
+# Clear stale NSStatusItem visibility cache so the icon is not hidden by system UI.
+# macOS caches per-autosaveName visibility in com.apple.controlcenter / com.apple.systemuiserver.
+echo "🧹 Clearing NSStatusItem cache..."
+defaults delete com.apple.controlcenter "NSStatusItem Visible com.coolbar.statusItem" 2>/dev/null || true
+defaults delete com.apple.controlcenter "NSStatusItem Visible com.coolbar.statusItem.v2" 2>/dev/null || true
+defaults delete com.apple.systemuiserver "NSStatusItem Visible com.coolbar.statusItem" 2>/dev/null || true
+defaults delete com.apple.systemuiserver "NSStatusItem Visible com.coolbar.statusItem.v2" 2>/dev/null || true
+
 # Build with SPM (release)
 swift build -c release 2>&1
 
@@ -22,41 +30,8 @@ cp .build/arm64-apple-macosx/release/CoolBar "$APP_DIR/Contents/MacOS/CoolBar"
 # PkgInfo
 echo -n 'APPL????' > "$APP_DIR/Contents/PkgInfo"
 
-# Info.plist
-cat > "$APP_DIR/Contents/Info.plist" << 'PLISTEOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-	<key>CFBundleDevelopmentRegion</key>
-	<string>zh_CN</string>
-	<key>CFBundleDisplayName</key>
-	<string>CoolBar</string>
-	<key>CFBundleExecutable</key>
-	<string>CoolBar</string>
-	<key>CFBundleIdentifier</key>
-	<string>com.coolbar.app</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>CoolBar</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
-	<key>CFBundleVersion</key>
-	<string>1</string>
-	<key>LSMinimumSystemVersion</key>
-	<string>14.0</string>
-	<key>LSUIElement</key>
-	<true/>
-	<key>NSHighResolutionCapable</key>
-	<true/>
-	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>CoolBar 需要蓝牙权限来显示已连接设备的电池电量</string>
-</dict>
-</plist>
-PLISTEOF
+# Info.plist (use Resources/Info.plist as the single source of truth)
+cp Resources/Info.plist "$APP_DIR/Contents/Info.plist"
 
 # Ad-hoc code sign
 codesign --force --deep --sign - "$APP_DIR" 2>/dev/null
@@ -77,6 +52,7 @@ echo "📦 DMG created: $DMG_PATH ($(du -h "$DMG_PATH" | cut -f1))"
 
 # Install & Launch
 echo "📋 Installing to /Applications..."
+rm -rf /Applications/CoolBar.app
 cp -R "$APP_DIR" /Applications/CoolBar.app
 codesign --force --deep --sign - /Applications/CoolBar.app 2>/dev/null
 

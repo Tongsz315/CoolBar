@@ -3,28 +3,29 @@ import Foundation
 /// 内存使用率监控
 final class MemoryMonitor: MonitorProtocol {
     let id = "memory"
-    let title = "MEM"
     let refreshInterval: TimeInterval = 2.0
     var isEnabled = true
 
     private(set) var displayText = "MEM --"
+    private(set) var usedBytes: UInt64 = 0
+    private(set) var totalBytes: UInt64 = 0
+    private(set) var pressure: Int = 0
     private(set) var history: [Double] = []
 
+    private let lock = NSLock()
+
     func start() {
-        displayText = "MEM --"
-        history = []
+        lock.withLock {
+            displayText = "MEM --"
+            history = []
+        }
     }
 
     func stop() {}
 
-    func refresh() { _ = update() }
+    func update() {
+        let total = ProcessInfo.processInfo.physicalMemory
 
-    /// 使用 host_statistics64 获取内存信息
-    func update() -> (used: UInt64, total: UInt64, pressure: Int) {
-        // 物理内存总量
-        let totalBytes = ProcessInfo.processInfo.physicalMemory
-
-        // 使用 host_statistics64 获取 VM 统计
         var size = mach_msg_type_number_t(MemoryLayout<vm_statistics64>.size / MemoryLayout<integer_t>.size)
         var vmStats = vm_statistics64()
 
@@ -35,55 +36,60 @@ final class MemoryMonitor: MonitorProtocol {
         }
 
         guard result == KERN_SUCCESS else {
-            return (0, totalBytes, 0)
+            lock.withLock { displayText = "MEM --" }
+            return
         }
 
         let pageSize = UInt64(vm_kernel_page_size)
-        let _ = UInt64(vmStats.free_count)
         let activePages = UInt64(vmStats.active_count)
-        let _ = UInt64(vmStats.inactive_count)
         let wirePages = UInt64(vmStats.wire_count)
         let compressedPages = UInt64(vmStats.compressor_page_count)
-
         let used = (activePages + wirePages + compressedPages) * pageSize
 
-        // 内存压力：使用已用内存 / 总量估算
-        let pressure: Int
-        let ratio = Double(used) / Double(totalBytes)
+        let ratio = Double(used) / Double(total)
+        let pressureLevel: Int
         switch ratio {
-        case 0..<0.5:  pressure = 1  // 低
-        case 0.5..<0.75: pressure = 2  // 中
-        case 0.75..<0.9: pressure = 3  // 高
-        default:         pressure = 4  // 严重
+        case 0..<0.5:  pressureLevel = 1
+        case 0.5..<0.75: pressureLevel = 2
+        case 0.75..<0.9: pressureLevel = 3
+        default:         pressureLevel = 4
         }
 
         let percent = Int(round(ratio * 100))
-        history.append(Double(percent))
-        if history.count > 30 { history.removeFirst() }
 
-        displayText = String(format: "MEM %2d%%", percent)
-
-        return (used, totalBytes, pressure)
+        lock.withLock {
+            usedBytes = used
+            totalBytes = total
+            pressure = pressureLevel
+            history.append(Double(percent))
+            if history.count > 30 { history.removeFirst() }
+            displayText = String(format: "MEM %2d%%", percent)
+        }
     }
 
     func detailedInfo() -> [(String, String)] {
-        let (used, total, pressure) = update()
-        let usedGB = String(format: "%.1f GB", Double(used) / 1_073_741_824)
-        let totalGB = String(format: "%.1f GB", Double(total) / 1_073_741_824)
-        let pressureText: String = {
-            switch pressure {
-            case 1: return "低 🟢"
-            case 2: return "中 🟡"
-            case 3: return "高 🟠"
-            default: return "严重 🔴"
-            }
-        }()
-        let percent = Int(round(Double(used) / Double(total) * 100))
-        return [
-            ("已用", usedGB),
-            ("总量", totalGB),
-            ("使用率", "\(percent)%"),
-            ("压力", pressureText)
-        ]
+        lock.withLock {
+            let usedGB = String(format: "%.1f GB", Double(usedBytes) / 1_073_741_824)
+            let totalGB = String(format: "%.1f GB", Double(totalBytes) / 1_073_741_824)
+            let pressureText: String = {
+                switch pressure {
+                case 1: return "低 🟢"
+                case 2: return "中 🟡"
+                case 3: return "高 🟠"
+                default: return "严重 🔴"
+                }
+            }()
+            let percent = totalBytes > 0 ? Int(round(Double(usedBytes) / Double(totalBytes) * 100)) : 0
+            return [
+                ("已用", usedGB),
+                ("总量", totalGB),
+                ("使用率", "\(percent)%"),
+                ("压力", pressureText)
+            ]
+        }
+    }
+
+    func getHistory() -> [Double] {
+        lock.withLock { Array(history) }
     }
 }

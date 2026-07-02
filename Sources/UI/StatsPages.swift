@@ -170,7 +170,7 @@ struct MemoryPage: View {
     }
 
     private func vmTime() -> String {
-        let f = DateFormatter(); f.dateFormat = "HH:mm:ss"; return f.string(from: Date())
+        Formatters.shortTimeFormatter.string(from: Date())
     }
 }
 
@@ -299,7 +299,7 @@ struct BatteryPage: View {
     }
 
     private func vmTime() -> String {
-        let f = DateFormatter(); f.dateFormat = "HH:mm"; return f.string(from: Date())
+        Formatters.timeFormatter.string(from: Date())
     }
 }
 

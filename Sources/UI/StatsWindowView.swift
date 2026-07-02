@@ -317,7 +317,7 @@ struct AreaChart: View {
     }
 
     private func vmTime() -> String {
-        let fmt = DateFormatter(); fmt.dateFormat = "HH:mm:ss"; return fmt.string(from: Date())
+        Formatters.shortTimeFormatter.string(from: Date())
     }
 }
 
@@ -399,7 +399,7 @@ private struct FlowLayout: Layout {
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         let result = arrange(proposal: proposal, subviews: subviews)
         for (index, item) in result.items.enumerated() {
-            subviews[index].place(at: CGPoint(x: bounds.minX + item.x, y: bounds.minY + y),
+            subviews[index].place(at: CGPoint(x: bounds.minX + item.x, y: bounds.minY + item.y),
                                  proposal: ProposedViewSize(item.size))
         }
     }
@@ -420,6 +420,4 @@ private struct FlowLayout: Layout {
         }
         return (CGSize(width: maxWidth, height: y + rowHeight), items)
     }
-
-    private var y: CGFloat { 0 }
 }

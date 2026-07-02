@@ -3,24 +3,27 @@ import Foundation
 /// CPU 使用率监控
 final class CPUMonitor: MonitorProtocol {
     let id = "cpu"
-    let title = "CPU"
     let refreshInterval: TimeInterval = 1.0
     var isEnabled = true
 
     private(set) var displayText = "CPU --"
+    private(set) var currentUsage: Double = 0
+    private(set) var cores: Int = 0
+    private(set) var history: [Double] = []
+
+    private let lock = NSLock()
     private var previousInfo: host_cpu_load_info?
-    private var history: [Double] = []
 
     func start() {
-        displayText = "CPU --"
+        lock.withLock {
+            displayText = "CPU --"
+            cores = ProcessInfo.processInfo.activeProcessorCount
+        }
     }
 
     func stop() {}
 
-    func refresh() { _ = update() }
-
-    /// 使用 host_processor_info 获取 CPU 使用率
-    func update() -> Double {
+    func update() {
         var size = mach_msg_type_number_t(MemoryLayout<host_cpu_load_info>.size / MemoryLayout<integer_t>.size)
         var info = host_cpu_load_info()
 
@@ -30,19 +33,18 @@ final class CPUMonitor: MonitorProtocol {
             }
         }
 
-        guard result == KERN_SUCCESS else { return 0 }
+        guard result == KERN_SUCCESS else {
+            lock.withLock { displayText = "CPU --" }
+            return
+        }
 
         guard let prev = previousInfo else {
             previousInfo = info
-            return 0
+            return
         }
 
-        // 安全减法：处理 cpu_ticks (UInt32) 回绕
         func safeDiff(_ current: UInt32, _ previous: UInt32) -> Double {
-            if current >= previous {
-                return Double(current - previous)
-            }
-            // 回绕：current 从 0 重新开始
+            if current >= previous { return Double(current - previous) }
             return Double(UInt32.max - previous) + Double(current) + 1
         }
 
@@ -54,28 +56,33 @@ final class CPUMonitor: MonitorProtocol {
 
         previousInfo = info
 
-        guard total > 0 else { return 0 }
+        guard total > 0 else {
+            lock.withLock { displayText = "CPU --" }
+            return
+        }
 
         let usage = ((userDiff + systemDiff + niceDiff) / total) * 100.0
         let rounded = min(100, max(0, round(usage)))
 
-        // 记录历史（最多 20 个点给迷你图）
-        history.append(rounded)
-        if history.count > 20 { history.removeFirst() }
-
-        displayText = String(format: "CPU %2.0f%%", rounded)
-        return rounded
+        lock.withLock {
+            currentUsage = rounded
+            history.append(rounded)
+            if history.count > 20 { history.removeFirst() }
+            displayText = String(format: "CPU %2.0f%%", rounded)
+        }
     }
 
     func detailedInfo() -> [(String, String)] {
-        let usage = update()
-        let cores = ProcessInfo.processInfo.activeProcessorCount
-        return [
-            ("使用率", String(format: "%.1f%%", usage)),
-            ("核心数", "\(cores) 核"),
-            ("架构", "Apple Silicon (ARM64)")
-        ]
+        lock.withLock {
+            [
+                ("使用率", String(format: "%.1f%%", currentUsage)),
+                ("核心数", "\(cores) 核"),
+                ("架构", "Apple Silicon (ARM64)")
+            ]
+        }
     }
 
-    func getHistory() -> [Double] { history }
+    func getHistory() -> [Double] {
+        lock.withLock { Array(history) }
+    }
 }
